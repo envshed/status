@@ -1,0 +1,84 @@
+#
+# ===============================
+# Envshed-local customization — do not auto-sync
+# ===============================
+#
+# Differs from upstream upptime/upptime@v1.41.0 in two ways:
+#   1. Workflow-level permissions block so the built-in GITHUB_TOKEN has
+#      `actions: write` (required for the `Generate graphs` step to
+#      dispatch graphs.yml). Our org's default_workflow_permissions is
+#      `read`, which is the safer default we want to keep globally;
+#      this file opts in to broader perms only for Upptime's own jobs.
+#   2. Checkout uses `github.token` explicitly. An OAuth-app token stored
+#      as GH_PAT doesn't authenticate as a git credential in third-party
+#      orgs without prior OAuth app approval. `github.token` always works
+#      for same-repo checkout.
+#
+# Regen this file from upstream by copying upptime/upptime's setup.yml
+# and re-applying those two diffs. .templaterc.json excludes it from
+# auto-sync so the Upptime update-template job won't clobber us.
+
+name: Setup CI
+on:
+  push:
+    paths:
+      - ".upptimerc.yml"
+  repository_dispatch:
+    types: [setup]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pages: write
+  id-token: write
+
+jobs:
+  release:
+    name: Setup Upptime
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ github.token }}
+      - name: Update template
+        uses: upptime/uptime-monitor@v1.41.0
+        with:
+          command: "update-template"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}
+      - name: Update response time
+        uses: upptime/uptime-monitor@v1.41.0
+        with:
+          command: "response-time"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+      - name: Update summary in README
+        uses: upptime/uptime-monitor@v1.41.0
+        with:
+          command: "readme"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}
+      - name: Generate graphs
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Graphs CI
+          token: ${{ secrets.GH_PAT || github.token }}
+      - name: Generate site
+        uses: upptime/uptime-monitor@v1.41.0
+        with:
+          command: "site"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}
+      - uses: peaceiris/actions-gh-pages@v4
+        name: GitHub Pages Deploy
+        with:
+          github_token: ${{ secrets.GH_PAT || github.token }}
+          publish_dir: "site/status-page/__sapper__/export/"
+          force_orphan: "false"
+          user_name: "Upptime Bot"
+          user_email: "73812536+upptime-bot@users.noreply.github.com"

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Envshed product issues
+    url: https://github.com/envshed/envshed/issues/new/choose
+    about: Bugs in the Envshed dashboard, API, or CLI belong on the main repo, not the status page.
+  - name: Envshed support
+    url: mailto:founders@envshed.com
+    about: Email founders@envshed.com for outage updates or anything not covered by the status page.

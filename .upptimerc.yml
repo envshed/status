@@ -1,0 +1,61 @@
+# Envshed — public status page + synthetic uptime checks.
+# Docs: https://upptime.js.org/docs/configuration
+
+owner: envshed
+repo: status
+
+sites:
+  - name: Envshed App
+    url: https://app.envshed.com
+    tags: [critical, app]
+  - name: Envshed API — health
+    # /api/health reports real downstream health: Postgres connectivity + KMS wrap-key
+    # verification. Returns 200 when all checks pass, 503 on failure
+    # (see docs/reliability/README.md in the envshed monorepo).
+    url: https://app.envshed.com/api/health
+    tags: [critical, api]
+    expectedStatusCodes: [200]
+    maxResponseTime: 2000
+  - name: Envshed CLI auth
+    # CLI uses the OAuth 2.0 device flow at /api/v1/device.
+    # GET without params returns 400 "Missing device_code" — that proves the route is up
+    # without creating a DB row on every probe.
+    url: https://app.envshed.com/api/v1/device
+    tags: [critical, cli-auth]
+    expectedStatusCodes: [400]
+  - name: Envshed Docs
+    url: https://docs.envshed.com
+    tags: [non-critical, docs]
+  - name: Envshed Landing
+    url: https://envshed.com
+    tags: [non-critical, landing]
+
+status-website:
+  # Served at https://status.envshed.com via GitHub Pages custom domain.
+  # `cname` writes a CNAME file into the published site so GitHub Pages routes
+  # the apex status subdomain to this repo's build output.
+  cname: status.envshed.com
+  logoUrl: https://envshed.com/logo.svg
+  name: Envshed Status
+  introTitle: "**Envshed status**"
+  introMessage: "Public uptime monitor for the Envshed dashboard, API, CLI auth, docs, and landing page. Checked every 5 minutes. Incidents are tracked as GitHub issues on envshed/status."
+  navbar:
+    - title: Status
+      href: /
+    - title: GitHub
+      href: https://github.com/envshed/status
+
+assignees:
+  - irbano
+
+# Notifications are wired in a follow-up once founders@envshed.com is provisioned (ENV-41).
+# Until then, incidents are visible as auto-opened GitHub issues on envshed/status.
+
+workflowSchedule:
+  graphs: "0 0 * * *"
+  responseTime: "0 23 * * *"
+  staticSite: "0 1 * * *"
+  summary: "0 0 * * *"
+  updates: "0 0 * * *"
+  updateTemplate: "0 0 * * *"
+  uptime: "*/5 * * * *"
